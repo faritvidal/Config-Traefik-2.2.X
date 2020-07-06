@@ -1,0 +1,59 @@
+################################################################
+# Traefik logs configuration
+################################################################
+log:
+  # (Default: error) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+  level: WARN
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true 
+################################################################
+# Access logs configuration
+################################################################
+accessLog:
+  filePath: /log/access.log
+  bufferingSize: 100
+  filters:    
+    statusCodes:
+      - 200
+      - 300-302
+      - 400-499
+    retryAttempts: true
+    minDuration: 10ms
+################################################################
+# API and dashboard configuration
+################################################################
+api:
+  dashboard: true
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+################################################################
+# Providers
+################################################################
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false 
+    swarmMode: false
+    network: proxy
+    defaultRule: "Host(`{{ .Name }}.{{ index .Labels \"com.docker.compose.service\"}}.yourdomain.com`)"
+  file:
+    directory: /configurations/
+    watch: true
+    debugLogGeneratedTemplate: true
+################################################################
+# SSL Resolvers
+################################################################
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: youremail@domain.com
+      storage: acme.json
+      keyType: EC384
+      httpChallenge:
+        entryPoint: http

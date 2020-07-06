@@ -1,0 +1,17 @@
+# Dynamic configuration
+http:
+  routers:
+    api-router:
+      rule: "PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
+      service: api@internal
+      tls:
+        certResolver: letsencrypt
+      entryPoints:
+        - http
+
+    api-metrics:
+      entryPoints:
+        - metrics
+      rule: "PathPrefix(`/metrics`)"
+      service: prometheus@internal
+

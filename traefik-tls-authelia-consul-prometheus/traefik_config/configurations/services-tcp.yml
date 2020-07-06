@@ -1,0 +1,7 @@
+## Dynamic configuration
+# tcp:
+#   services:
+#     SERVICE-svc:
+#       loadBalancer:
+#         servers:
+#         - url: X.X.X.X:80

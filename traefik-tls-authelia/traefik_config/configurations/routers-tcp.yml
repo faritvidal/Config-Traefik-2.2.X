@@ -1,0 +1,12 @@
+# Dynamic configuration
+# tcp:
+#   routers:
+#     route-to-SERVICE:
+#       rule: "HostSNI(`YOURDOMAIN.COM`)"
+#       service: SERVICES-svc
+#       priority: 1000
+#       tls:
+#         certResolver: letsencrypt
+#         passthrough: true
+#       entryPoints:
+#         - http

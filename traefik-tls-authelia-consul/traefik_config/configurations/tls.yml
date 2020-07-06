@@ -1,0 +1,8 @@
+## Dynamic configuration
+# tls:
+#   stores:
+#     default:
+#       defaultCertificate:
+#         certFile: /ssl/certs.cert
+#         keyFile: /ssl/certs.key
+#         certFile: /ssl/certs/ca.cert

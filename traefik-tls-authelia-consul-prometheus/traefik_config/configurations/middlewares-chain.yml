@@ -1,0 +1,7 @@
+http:
+  middlewares:
+    chain-authelia:
+      chain:
+        middlewares: 
+          - middlewares-https-redirect
+          - middlewares-authelia

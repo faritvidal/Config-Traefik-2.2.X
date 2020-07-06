@@ -1,0 +1,75 @@
+version: '3.3'
+########################### NETWORKS
+# Create proxy network
+# $ docker network create proxy
+networks:
+  proxy:
+    external: true
+########################### SERVICES
+services:
+####Traefik is a modern HTTP reverse proxy and load balancer that makes deploying microservices easy
+  traefik:
+    image: traefik:$TRAEFIKVERSION
+    container_name: traefik
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 80:80
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Add folder with STATIC configuration yml
+      - ./traefik_config/traefik.yml:/traefik.yml:ro
+      - ./traefik_config/log/access.log:/log/access.log
+      # Add folder with dynamic configuration yml
+      - ./traefik_config/configurations:/configurations
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.traefik-http-rtr.entrypoints=http
+      - traefik.http.routers.traefik-http-rtr.rule=Host(`traefik.$DOMAINNAME`)
+      ## Middlewares Rules
+      - traefik.http.routers.traefik-http-mdw.middlewares=user-auth@file
+      ## Service Rules
+      - traefik.http.routers.traefik-http-svc.service=api@internal
+####Portainer is a lightweight management UI which allows you to easily manage your different Docker
+  portainer:
+    container_name: portainer
+    image: portainer/portainer:$PORTAINERVERSION
+    restart: always
+    depends_on:
+      - traefik
+    command: -H unix:///var/run/docker.sock
+    expose:
+      - 9000
+    networks:
+      - proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/portainer/data:/data
+    environment:
+      - TZ=$TZ
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.portainer-http-rtr.rule=Host(`portainer.$DOMAINNAME`)
+      - traefik.http.routers.portainer-http-rtr.entrypoints=http
+####whoami test in front page
+  whoami:
+    container_name: frontpage
+    image: containous/whoami
+    restart: always
+    depends_on:
+      - traefik
+    expose:
+      - 80
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.whoami-http-rtr.rule=Host(`$DOMAINNAME`)
+      - traefik.http.routers.whoami-http-rtr.entrypoints=http

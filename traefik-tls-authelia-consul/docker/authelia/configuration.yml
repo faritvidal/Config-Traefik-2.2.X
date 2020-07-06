@@ -1,0 +1,85 @@
+###############################################################
+#                   Authelia configuration                    #
+###############################################################
+
+host: 0.0.0.0
+port: 9091
+log_level: debug
+# I used this site to generate the secret: https://www.grc.com/passwords.html
+jwt_secret: NEW TOKEN
+default_redirection_url: https://auth.DOMAIN.COM
+totp:
+  issuer: authelia.com
+
+
+# customize passwords based on https://docs.authelia.com/configuration/authentication/file.html
+authentication_backend:
+# disable_reset_password: false
+  file:
+    path: /etc/authelia/users_database.yml
+
+# Enable the following for Duo Push Notification support
+# Duo Free-Free up to 10 users
+# duo_api:
+#     hostname: GENERATE IN DUO APP
+#     integration_key: GENERATE IN DUO APP
+#     secret_key: GENERATE IN DUO APP
+
+# https://docs.authelia.com/configuration/access-control.html
+access_control:
+  default_policy: deny
+  rules:
+#wildcard domain allowed to use double authentication for all services used byiteria
+    # - domain: "*.DOMAIN.COM"
+    #   policy: two_factor
+    - domain: traefik.DOMAIN.COM
+      policy: one_factor
+    - domain: portainer.DOMAIN.COM
+      policy: one-_factor
+    - domain: phpmyadmin.DOMAIN.COM
+      policy: one_factor
+    - domain: DOMAIN.COM
+      policy: two_factor
+
+session:
+  name: authelia_session
+# Used a different secret, but the same site as jwt_secret above.
+# session cookies to authenticate users
+  secret: GENERATE NEW TOKEN
+  expiration: 3600 # 1 hour
+  inactivity: 300 # 5 minutes
+  domain: DOMAIN.COM # Should match whatever your root protected domain is
+
+  redis:
+    host: redis
+    port: 6379
+    # password: authelia
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+# supports more than one database 
+# in this case a local **file** is used as the "user" store and the other records go to **mysql**
+  local:
+    path: /var/lib/authelia/db.sqlite3
+  mysql:
+    host: authelia_mariadb
+    port: 3306
+    database: DATABASE_NAME
+    username: DATABASE_USER
+    password: DATABASE_PASSWORD
+
+notifier:
+  # Note Authelia tory only supports 1 notification method
+  smtp:
+    username: YOURREMAIL@DOMAIN.COM
+    password: YOUR_PASSWORD
+    sender: YOURREMAIL@DOMAIN.COM
+    host: smtp.gmail.com
+    port: 587
+
+#  filesystem:
+#    filename: /tmp/authelia/notification.txt

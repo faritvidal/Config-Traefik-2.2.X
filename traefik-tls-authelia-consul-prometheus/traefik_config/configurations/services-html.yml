@@ -1,0 +1,9 @@
+## Dynamic configuration
+http:
+  services:
+    traefik-svc:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1/"
+
+

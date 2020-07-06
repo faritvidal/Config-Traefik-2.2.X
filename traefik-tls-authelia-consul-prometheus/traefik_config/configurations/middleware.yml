@@ -1,0 +1,16 @@
+http:
+  middlewares:
+### MIDDLEWARES
+    middlewares-https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+        port: 443    
+
+    middlewares-authelia:
+      forwardAuth:
+          address: "http://authelia:9091/api/verify?rd=https://auth.jokerlight.xyz"
+          trustForwardHeader: true
+          authResponseHeaders: 
+              - "Remote-User"
+              - "Remote-Groups"    

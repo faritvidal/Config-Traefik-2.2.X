@@ -1,0 +1,240 @@
+version: '3.3'
+########################### NETWORKS
+# Create proxy network
+# $ docker network create --gateway 192.168.90.1 --subnet 192.168.90.0/24 proxy
+networks:
+  proxy:
+    external:
+      name: proxy
+  default:
+    driver: bridge
+########################### SERVICES
+services:
+####DB for Authelia
+  mariadb:
+    container_name: authelia_mariadb
+    image: mariadb:$MARIAVERSION
+    hostname: authelia_mariadb
+    restart: always
+    networks:
+      - proxy
+    volumes:
+      - ./docker/mariadb/config:/config
+      - ./docker/mariadb/mysql:/var/lib/mysql
+    expose:
+      - 3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=$AUTHELIA_MYSQL_ROOT_PASSWORD
+      - MYSQL_USER=$AUTHELIA_MYSQL_USER
+      - MYSQL_DATABASE=$AUTHELIA_MYSQL_DATABASE
+      - MYSQL_PASSWORD=$AUTHELIA_MYSQL_PASSWORD
+    labels:
+      - traefik.enable=false
+####GUI managament for mariadb
+  phpmyadmin:
+    container_name: authelia_phpmyadmin
+    image: phpmyadmin/phpmyadmin:$PHPMYADMINVERSION
+    depends_on:
+      - mariadb
+    restart: always
+    expose:
+      - 80
+    networks:
+      - proxy
+    environment:
+      PMA_HOSTS: authelia_mariadb
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.phpmyadmin-http-rtr.rule=Host(`phpmyadmin.$DOMAINNAME`)
+      - traefik.http.routers.phpmyadmin-http-rtr.entrypoints=http
+      - traefik.http.routers.phpmyadmin-https-rtr.rule=Host(`phpmyadmin.$DOMAINNAME`)
+      - traefik.http.routers.phpmyadmin-https-rtr.entrypoints=https
+      - traefik.http.routers.phpmyadmin-https-rtr.tls=true
+      - traefik.http.routers.phpmyadmin-https-rtr.tls.certresolver=letsencrypt
+      ## Middlewares Rules
+      - traefik.http.routers.phpmyadmin-http-rtr.middlewares=middlewares-https-redirect@file
+      - traefik.http.routers.phpmyadmin-https-rtr.middlewares=chain-authelia@file
+####redis Cache for authelia
+  redis:
+    container_name: authelia_redis
+    image: redis:alpine
+    restart: always
+    volumes:
+      - ./docker/redis:/data
+    networks:
+      - proxy
+    expose:
+      - 6379
+    environment:
+      - TZ=$TZ
+    labels:
+      - traefik.enable=false
+####Authelia (Lite) - Self-Hosted Single Sign-On and Two-Factor Authentication
+  authelia:
+    container_name: authelia
+    image: authelia/authelia:$AUTHELIAVERSION
+    restart: always
+    depends_on:
+      - mariadb
+      - phpmyadmin
+      - redis
+    expose:
+      - 9091
+    environment:
+      - TZ=$TZ
+    volumes:
+      - ./docker/authelia/authelia:/var/lib/authelia
+      - ./docker/authelia/configuration.yml:/etc/authelia/configuration.yml:ro
+      - ./docker/authelia/users_database.yml:/etc/authelia/users_database.yml
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.authelia.rule=Host(`auth.$DOMAINNAME`)
+      - traefik.http.routers.authelia.entrypoints=https
+      - traefik.http.routers.authelia.tls=true
+      - traefik.http.routers.authelia.tls.certresolver=letsencrypt
+####Traefik is a modern HTTP reverse proxy and load balancer that makes deploying microservices easy
+  traefik:
+    container_name: traefik_proxy
+    image: traefik:$TRAEFIKVERSION
+    restart: always
+    depends_on:
+      - authelia
+    ports:
+      - 80:80
+      - 443:443
+      - 8082:8082
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Add folder with STATIC configuration yml
+      - ./traefik_config/traefik.yml:/traefik.yml:ro
+      - ./traefik_config/acme/acme.json:/acme.json
+      - ./traefik_config/log/access.log:/log/access.log
+      # Add folder with DYNAMIC configuration yml
+      - ./traefik_config/configurations:/configurations
+    networks:
+      proxy:
+        ipv4_address: 192.168.90.254 # You can specify a static IP
+    # environment:
+    # use this value of environment only if consul has ACL property active
+    #   - "CONSUL_HTTP_TOKEN=CONSUL_ACL_FOR_TRAEFIK"
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.traefik-rtr.rule=Host(`traefik.$DOMAINNAME`)
+      - traefik.http.routers.traefik-rtr.entrypoints=https
+      - traefik.http.routers.traefik-rtr.service=api@internal
+      - traefik.http.routers.traefik-rtr.tls=true
+      - traefik.http.routers.traefik-rtr.tls.certresolver=letsencrypt
+      ## Middlewares Rules
+      - traefik.http.routers.traefik-rtr.middlewares=chain-authelia@file
+####Portainer is a lightweight management UI which allows you to easily manage your different Docker
+  portainer:
+    container_name: portainer
+    image: portainer/portainer:$PORTAINERVERSION
+    restart: always
+    depends_on:
+      - traefik
+    command: -H unix:///var/run/docker.sock
+    expose:
+      - 9000
+    networks:
+      - proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/portainer/data:/data
+    environment:
+      - TZ=$TZ
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.portainer-http-rtr.rule=Host(`portainer.$DOMAINNAME`)
+      - traefik.http.routers.portainer-http-rtr.entrypoints=http
+      - traefik.http.routers.portainer-https-rtr.rule=Host(`portainer.$DOMAINNAME`)
+      - traefik.http.routers.portainer-https-rtr.entrypoints=https
+      - traefik.http.routers.portainer-https-rtr.tls=true
+      - traefik.http.routers.portainer-https-rtr.tls.certresolver=letsencrypt
+      ## Middlewares Rules
+      - traefik.http.routers.portainer-http-rtr.middlewares=middlewares-https-redirect@file
+      - traefik.http.routers.portainer-https-rtr.middlewares=chain-authelia@file
+####Dozzle is a simple, a web based interface to monitor your Docker container logs
+  dozzle:
+    container_name: dozzle_logs
+    image: amir20/dozzle:$DOZZLEVERSION
+    restart: always
+    networks:
+      - proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 9999:8080
+    labels:
+      - traefik.enable=false
+####whoami test in front page
+  whoami:
+    container_name: frontpage
+    image: containous/whoami
+    restart: always
+    depends_on:
+      - traefik
+    expose:
+      - 80
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      ## Routers Rules
+      - traefik.http.routers.whoami-http-rtr.rule=Host(`$DOMAINNAME`)
+      - traefik.http.routers.whoami-http-rtr.entrypoints=http
+      - traefik.http.routers.whoami-https-rtr.rule=Host(`$DOMAINNAME`)
+      - traefik.http.routers.whoami-https-rtr.entrypoints=https
+      - traefik.http.routers.whoami-https-rtr.tls=true
+      - traefik.http.routers.whoami-https-rtr.tls.certresolver=letsencrypt
+      ## Middlewares Rules
+      - traefik.http.routers.whoami-http-rtr.middlewares=middlewares-https-redirect@file
+      - traefik.http.routers.whoami-https-rtr.middlewares=chain-authelia@file
+####Cadvisor collect docker metrics
+  cadvisor:
+    image: google/cadvisor:$CADVISOR
+    container_name: docker-cadvisor
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 8080:8080
+    networks:
+      - proxy
+    deploy:
+      mode: global
+    labels:
+      - traefik.enable=false
+####node-exporter collect node metrics
+  node-exporter:
+    image: prom/node-exporter:$NODEEXPORTER
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command: 
+      - '--path.procfs=/host/proc' 
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - 9100:9100
+    networks:
+      - proxy
+
+    deploy:
+      mode: global
+    labels:
+      - traefik.enable=false

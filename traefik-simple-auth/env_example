@@ -1,0 +1,12 @@
+##### DOCKER VERSION
+
+TRAEFIKVERSION=v2.2.1
+PORTAINERVERSION=1.25.5
+
+##### DOMAIN
+
+DOMAINNAME=yourdomain.com
+
+##### SYSTEM
+
+TZ=America/Costa_Rica
