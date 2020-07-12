@@ -12,8 +12,6 @@ services:
     image: traefik:$TRAEFIKVERSION
     container_name: traefik
     restart: always
-    security_opt:
-      - no-new-privileges:true
     ports:
       - 80:80
     volumes:
@@ -32,7 +30,7 @@ services:
       - traefik.http.routers.traefik-http-rtr.entrypoints=http
       - traefik.http.routers.traefik-http-rtr.rule=Host(`traefik.$DOMAINNAME`)
       ## Middlewares Rules
-      - traefik.http.routers.traefik-http-mdw.middlewares=user-auth@file
+      - traefik.http.routers.traefik-http-rtr.middlewares=user-auth@file
       ## Service Rules
       - traefik.http.routers.traefik-http-svc.service=api@internal
 ####Portainer is a lightweight management UI which allows you to easily manage your different Docker

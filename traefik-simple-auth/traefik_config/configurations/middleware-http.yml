@@ -4,5 +4,4 @@ http:
     user-auth:
       basicAuth:
         users:
-          - "user:$apr1$tr4xmavg$BVDfOg1qtWtd8L34VPBih/"
-          
+          - "user:$apr1$tr4xmavg$BVDfOg1qtWtd8L34VPBih/" #user/user

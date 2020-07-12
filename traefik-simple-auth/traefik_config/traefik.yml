@@ -37,10 +37,7 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false 
-    swarmMode: false
     network: proxy
-    defaultRule: "Host(`{{ .Name }}.{{ index .Labels \"com.docker.compose.service\"}}.yourdomain.com`)"
   file:
     directory: /configurations/
     watch: true
-    debugLogGeneratedTemplate: true

@@ -3,11 +3,7 @@
 ################################################################
 log:
   # (Default: error) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
-  level: WARN
-
-global:
-  checkNewVersion: true
-  sendAnonymousUsage: true 
+  level: INFO
 ################################################################
 # Access logs configuration
 ################################################################
@@ -25,11 +21,14 @@ accessLog:
 # API and dashboard configuration
 ################################################################
 api:
+  insecure: true
   dashboard: true
 
 entryPoints:
   http:
     address: ":80"
+  traefik:
+    address: ":8080"
 ################################################################
 # Providers
 ################################################################
@@ -37,6 +36,8 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false 
-    swarmMode: false
     network: proxy
-    defaultRule: "Host(`{{ .Name }}.{{ index .Labels \"com.docker.compose.service\"}}.yourdomain.com`)"
+  file:
+    directory: /configurations/
+    watch: true
+    debugLogGeneratedTemplate: true
