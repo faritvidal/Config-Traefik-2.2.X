@@ -1,0 +1,8 @@
+# Dynamic configuration
+http:
+  routers:
+    api-router:
+      rule: "PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
+      service: api@internal
+      entryPoints:
+        - http

@@ -1,0 +1,18 @@
+# Dynamic configuration
+http:
+  middlewares:
+    user-auth:
+      basicAuth:
+        users:
+          - "user:$apr1$tr4xmavg$BVDfOg1qtWtd8L34VPBih/" #user/user
+
+    middlewares_strip_prefix_1:
+      redirectRegex:
+        regex: "^(https?://[^/]+/[a-z0-9_]+)$"
+        replacement: "${1}/"
+        permanent: true
+  
+    middlewares_strip_prefix_2:
+      stripPrefixRegex:
+        regex:
+          - "/[a-z0-9_]+"

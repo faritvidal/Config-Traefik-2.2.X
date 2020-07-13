@@ -1,0 +1,14 @@
+http:
+  middlewares:
+    chain-regex-prefix:
+      chain:
+        middlewares: 
+          - middlewares_strip_prefix_1
+          - middlewares_strip_prefix_2
+
+    chain-traefik:
+      chain:
+        middlewares: 
+          - middlewares_strip_prefix_1
+          - middlewares_strip_prefix_2
+          - user-auth
