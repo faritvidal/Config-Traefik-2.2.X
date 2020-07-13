@@ -30,6 +30,9 @@
 * [Traefik non TlS simple installation with basic auth](#traefik-non-tls-simple-installation-with-basic-auth)
   * [Software version](#software-versions)
   * [Traefik Configs](#traefik-configs-with-basic-auth)
+* [Traefik non TlS simple installation with basic auth and subpath](#traefik-non-tls-simple-installation-with-basic-auth)
+  * [Software version using subpath](#software-versions-usign-in-subpath)
+  * [Traefik Configs with subpath configs](#traefik-configs-with-subpath-configs)
 * [Traefik with TLS](#traefik-with-tls)
   * [Software version](#softwares-versions)
   * [Traefik file description](#traefik-file-description)
@@ -132,6 +135,38 @@ In the file `traefik_config/configurations/middlewares.yml` there is a predefine
  ```
   - traefik.http.routers.traefik-http-svc.service=api@internal
  ```
+
+ <!-- TRAEFIK NON TLS SIMPLE INSTALATION WITH BASIC AUTH AND SUBPATH  -->
+## Traefik non TlS simple installation with basic auth and subpath
+This section is to show a configuration with a slightly different change to the one we have been working on instead of using subdomain we will use **subpath**, this is to use the same domain but using different path to enter different applications.
+
+In the file `traefik_config/configurations/middleware-http.yml` there is a predefined user change it using the following website [Generate your user and password](https://www.web2generators.com/apache-tools/htpasswd-generator)
+
+Here is an example of what the configuration looks like.:
+
+<p align="center">
+    <br />
+    <br />
+    <img src="images/traefik_subpath.jpeg" alt="Traefik_using_subpath">
+    <br />
+</p>
+
+### Software versions usign in subpath
+* Traefik = `v2.2.1` Official website [Link](https://docs.traefik.io/)
+* Portainer = `1.25.5` Official website [Link](https://www.portainer.io/installation/)
+* MariaDB = `10.4.13` Official website [Link](https://downloads.mariadb.org/)
+* PhpmyAdmin = `5.0.2` Official website [Link](https://www.phpmyadmin.net/)
+* Whoami = `latest`
+
+### Traefik Configs with subpath configs
+1. All the configuration uses only port 80, **it is not necessary** to use an exclusive port to enter the dashboard of bringsfik example 8080.
+2. The docker-compose file has two different ways of defining the settings, one is in the case of the container whoami that carries the definition of the subpath and the other is the declaration of a complement of route rule.
+3. the suar subpath is necessary to add a / to the end of the url for it to work in this way that aggregation is done automatically using middlewares.
+4. **Traefik** supports that we make chains of our middlewares so that we can use them in groups in our case we use one to work which we call **middlewares-chain.yml**, very important note the middlewares must be created to refer to the chain, for more information you can consult the [Official documentation](https://docs.traefik.io/middlewares/chain/).
+5. Using this label the docker container will not appear in the settings of traefik.
+```
+- traefik.enable=false
+```
 <!-- TRAEFIK WITH TLS -->
 ## Traefik with TLS
 In this section we are going to start using tls using a free service called Let's Encrypt which we are going to store in a json file for more information read the following [article](https://docs.traefik.io/https/acme/).A very important note is that both the ports for the **http protocol** and for the **https protocol** must be redirected to the node that is running **traefik** with tls otherwise it will not work.
@@ -212,7 +247,7 @@ Reason why I recommended to put each one of these separately so that its mainten
 - services-tcp.yml
 ```
 2. We can also create a file for our own TLS as shown in the example calling it **tls.yml**. [Official documentation](https://docs.traefik.io/https/tls/).
-3. **Traefik** supports that we make chains of our middlewares so that we can use them in groups in our case we use one to work withiteria which we call **middlewares-chain.yml**, very important note the middlewares must be created to refer to the chain, for more information you can consult the [Official documentation](https://docs.traefik.io/middlewares/chain/).
+3. **Traefik** supports that we make chains of our middlewares so that we can use them in groups in our case we use one to work with authelia which we call **middlewares-chain.yml**, very important note the middlewares must be created to refer to the chain, for more information you can consult the [Official documentation](https://docs.traefik.io/middlewares/chain/).
 
 ### Authelia Users Config
 For the creation of the users Authelia  allows two forms of authentication, one by using text file and the other using  LDAP, in our case we are going to use the one of the file.

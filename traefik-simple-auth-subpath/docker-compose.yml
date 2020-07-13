@@ -77,7 +77,7 @@ services:
       - traefik.http.middlewares.whoamisub.stripprefix.forceslash=false
 ####MariaDB
   mariadb:
-    image: mariadb:10.5.2-bionic
+    image: mariadb:$MARIAVERSION
     container_name: mariadb
     hostname: mariadb
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
@@ -99,7 +99,7 @@ services:
 ####phpmyadmin
   phpmyadmin:
     container_name: phpmyadmin
-    image: phpmyadmin/phpmyadmin:5.0.2
+    image: phpmyadmin/phpmyadmin:$PHPMYADMINVERSION
     restart: always
     depends_on:
       - traefik
